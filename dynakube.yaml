@@ -1,0 +1,80 @@
+apiVersion: v1
+data:
+  apiToken: ZHQwYzAxLjdBNUhCNFlRSk9KNVZSNkdPSEJRUEJJNC5STVIzTDJGS05NSkZJUDM3TVMyRlYzMkFJNlFZV0gyVjZFQk5KRkpJWkZNM0c3TEk2UEtPQVhXTEwyM09HNFlH
+  dataIngestToken: ZHQwYzAxLkZDRTJHTkVXS0xJWjVSNEVVVFdWRTVNSC5RRVpaSzNIRVJNT0NJWEw0QlczRDIyVkZCU1JYMkJET0lBR0pIR082VVc3UFpCMlg3N1ZQNkg3WTU0RDY0R1RX
+kind: Secret
+metadata:
+  name: cluster-1
+  namespace: dynatrace
+  labels:
+    dynatrace.com/created-by: "dynatrace.kubernetes"
+type: Opaque
+---
+apiVersion: dynatrace.com/v1beta6
+kind: DynaKube
+metadata:
+  name: cluster-1
+  namespace: dynatrace
+  labels:
+    dynatrace.com/created-by: "dynatrace.kubernetes"
+# Link to api reference for further information: https://docs.dynatrace.com/docs/ingest-from/setup-on-k8s/reference/dynakube-parameters
+spec:
+  apiUrl: https://gqm70227.live.dynatrace.com/api
+  tokens: cluster-1
+  activeGate:
+    capabilities:
+      - kubernetes-monitoring
+    resources:
+      requests:
+        cpu: 200m
+        memory: 6Gi
+      limits:
+        cpu: 1000m
+        memory: 6Gi
+    replicas: 1
+---
+apiVersion: dynatrace.com/v1beta6
+kind: DynaKube
+metadata:
+  name: cluster-1-agents
+  namespace: dynatrace
+  labels:
+    dynatrace.com/created-by: "dynatrace.kubernetes"
+# Link to api reference for further information: https://docs.dynatrace.com/docs/ingest-from/setup-on-k8s/reference/dynakube-parameters
+spec:
+  apiUrl: https://gqm70227.live.dynatrace.com/api
+  tokens: cluster-1
+  oneAgent:
+    cloudNativeFullStack:
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+  activeGate:
+    capabilities:
+      - routing
+      - debugging
+    resources:
+      requests:
+        cpu: 250m
+        memory: 2Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    replicas: 3
+  templates:
+    otelCollector:
+      imageRef:
+        repository: public.ecr.aws/dynatrace/dynatrace-otel-collector
+        tag: latest
+  logMonitoring: {}
+  telemetryIngest:
+    protocols:
+      - jaeger
+      - otlp
+      - statsd
+      - zipkin
+    serviceName: telemetry-ingest
